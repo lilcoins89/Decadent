@@ -2,12 +2,41 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
-import {defineConfig} from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { getHeliusErrorMessage, getHeliusPortfolio } from './src/server/helius';
 
-export default defineConfig(() => {
+function heliusApi(): Plugin {
+  return {
+    name: 'decadent-helius-api',
+    configureServer(server) {
+      server.middlewares.use('/api/helius/portfolio', async (req, res) => {
+        res.setHeader('content-type', 'application/json');
+        const address = new URL(req.url ?? '/', 'http://localhost').searchParams.get('address');
+        if (!address) {
+          res.statusCode = 400;
+          res.end(JSON.stringify({ error: 'A Solana wallet address is required' }));
+          return;
+        }
+        try {
+          const portfolio = await getHeliusPortfolio(address);
+          res.statusCode = 200;
+          res.end(JSON.stringify(portfolio));
+        } catch (error) {
+          res.statusCode = 502;
+          res.end(JSON.stringify({ error: getHeliusErrorMessage(error) }));
+        }
+      });
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  process.env.HELIUS_API_KEY ||= env.HELIUS_API_KEY;
   return {
     plugins: [
       react(),
+      heliusApi(),
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',

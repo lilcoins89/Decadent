@@ -24,6 +24,7 @@ export const AgentProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     createOrder,
     selectTokenBySymbol,
     totalBalanceUsd,
+    walletAddress,
   } = useWallet();
 
   const [cliMode, setCliMode] = useState(false);
@@ -118,10 +119,24 @@ I am your multichain autonomous trading copilot. I can:
     }
 
     if (name === 'get_balance_and_portfolio') {
-      return {
-        executed: true,
-        message: `Total multichain valuation: $${totalBalanceUsd.toFixed(2)} USD across Solana, BSC, Ethereum, and Arbitrum.`,
-      };
+      const solanaAddress = walletAddress.solana;
+      try {
+        const response = await fetch(`/api/helius/portfolio?address=${encodeURIComponent(solanaAddress)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Helius portfolio request failed');
+        const assetSummary = data.assets
+          .filter((asset: { amount: number }) => asset.amount > 0)
+          .slice(0, 6)
+          .map((asset: { symbol: string; amount: number; valueUsd?: number }) => `${asset.amount.toLocaleString()} ${asset.symbol}${asset.valueUsd ? ` ($${asset.valueUsd.toFixed(2)})` : ''}`)
+          .join(', ');
+        return {
+          executed: true,
+          message: `Live Helius portfolio for ${solanaAddress.slice(0, 4)}…${solanaAddress.slice(-4)}: ${data.nativeBalanceSol.toFixed(4)} SOL${assetSummary ? `; assets: ${assetSummary}` : ''}. Estimated priced assets: $${(data.totalValueUsd ?? 0).toFixed(2)}.`,
+          details: data,
+        };
+      } catch (error) {
+        return { executed: false, message: `Helius portfolio unavailable: ${error instanceof Error ? error.message : 'request failed'}` };
+      }
     }
 
     if (name === 'execute_trustwallet_cli') {
