@@ -6,6 +6,8 @@ import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 import util from 'util';
 import { GoogleGenAI, Type, FunctionDeclaration, Tool } from '@google/genai';
+import { generateAgentReply } from './src/server/mastra-agent';
+import { getOrCreateConversation, initializeDatabase, saveMessage } from './src/server/db';
 
 const execAsync = util.promisify(exec);
 
@@ -18,6 +20,8 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
+
+void initializeDatabase().catch((error) => console.error('[v0] Neon initialization failed:', error.message));
 
 // Initialize Google Gemini SDK on the server side
 const ai = new GoogleGenAI({
@@ -145,6 +149,20 @@ app.post('/api/agent/chat', async (req: Request, res: Response) => {
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const sessionId = String(req.headers['x-agent-session'] || req.ip || 'anonymous').slice(0, 200);
+    const conversationId = process.env.DATABASE_URL ? await getOrCreateConversation(sessionId, message.slice(0, 80)) : null;
+    if (conversationId) await saveMessage(conversationId, 'user', message);
+
+    if (process.env.GROQ_API_KEY) {
+      try {
+        const result = await generateAgentReply(message, history, currentContext, sessionId);
+        if (conversationId) await saveMessage(conversationId, 'assistant', result.text);
+        return res.json({ text: result.text, functionCalls: [], provider: 'mastra-groq', steps: result.steps });
+      } catch (mastraError: any) {
+        console.warn('[v0] Mastra/Groq failed, using fallback:', mastraError?.message);
+      }
     }
 
     // Check if GEMINI_API_KEY is available
