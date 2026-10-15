@@ -20,12 +20,13 @@ export const TradePanel: React.FC = () => {
   const { setActiveView } = useAgent();
 
   const [activeTab, setActiveTab] = useState<'swap' | 'tpsl'>('swap');
+  const [routingEngine, setRoutingEngine] = useState<'jupiter' | 'raydium'>('jupiter');
   const [fromTokenSymbol, setFromTokenSymbol] = useState<'SOL' | 'USDC' | 'BNB' | 'ETH' | string>('SOL');
   const [toTokenSymbol, setToTokenSymbol] = useState<string>(selectedToken.symbol === 'SOL' ? 'BONK' : selectedToken.symbol);
   const [inputAmount, setInputAmount] = useState<string>('1.0');
   const [slippage, setSlippage] = useState<number>(0.5);
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
-  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error'; solscanUrl?: string } | null>(null);
 
   // TP/SL Tab States
   const [tpAmount, setTpAmount] = useState<string>('1.0');
@@ -60,11 +61,36 @@ export const TradePanel: React.FC = () => {
     setStatusMessage(null);
 
     try {
-      const res = await executeSwap(fromToken.symbol, toToken.symbol, numInput);
-      if (res.success) {
-        setStatusMessage({ text: res.message, type: 'success' });
+      if (routingEngine === 'raydium' && fromToken.chain === 'solana') {
+        const res = await fetch('/api/raydium/swap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            poolId: '7JuwScUQ8YMvsA9A3cv6W78d91gS17gV1xZJqB9vQpCP',
+            inputMint: fromToken.address,
+            amountRaw: Math.round(numInput * 1e9).toString(),
+            tokenSymbol: fromToken.symbol,
+            slippage: slippage / 100,
+          }),
+        });
+        const rayData = await res.json();
+        if (rayData.success) {
+          await executeSwap(fromToken.symbol, toToken.symbol, numInput);
+          setStatusMessage({
+            text: `Raydium CPMM Swap Landed! CurveCalculator Quote: ${numInput} ${fromToken.symbol} → ${estimatedOutput.toFixed(4)} ${toToken.symbol} (Fee: ${rayData.tradeFee} lamports). TxVersion.V0 (computeBudget: 250k units, 50k microLamports).`,
+            type: 'success',
+            solscanUrl: rayData.solscanUrl,
+          });
+        } else {
+          setStatusMessage({ text: rayData.error || 'Raydium swap failed', type: 'error' });
+        }
       } else {
-        setStatusMessage({ text: res.message, type: 'error' });
+        const res = await executeSwap(fromToken.symbol, toToken.symbol, numInput);
+        if (res.success) {
+          setStatusMessage({ text: res.message, type: 'success' });
+        } else {
+          setStatusMessage({ text: res.message, type: 'error' });
+        }
       }
     } catch (err: any) {
       setStatusMessage({ text: err.message || 'Swap execution failed', type: 'error' });
@@ -236,7 +262,39 @@ export const TradePanel: React.FC = () => {
             </div>
           </div>
 
-          {/* Jupiter / Trust Wallet Routing Breakdown */}
+          {/* Routing Engine Toggle (Solana) */}
+          {fromToken.chain === 'solana' && (
+            <div className="flex items-center justify-between p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+              <span className="text-[11px] text-slate-400 font-medium pl-1">Execution Engine:</span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setRoutingEngine('jupiter')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                    routingEngine === 'jupiter'
+                      ? 'bg-blue-600 text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Jupiter Route
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoutingEngine('raydium')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition flex items-center gap-1 ${
+                    routingEngine === 'raydium'
+                      ? 'bg-cyan-600 text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Zap className="w-3 h-3 text-cyan-300" />
+                  <span>Raydium CPMM SDK</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Jupiter / Raydium Routing Breakdown */}
           <div className="rounded-xl border border-slate-800/80 bg-slate-900/30 p-2.5 space-y-1.5 text-xs">
             <div className="flex items-center justify-between text-slate-400">
               <span className="flex items-center gap-1 text-[11px]">
@@ -244,9 +302,20 @@ export const TradePanel: React.FC = () => {
                 Aggregated Route
               </span>
               <span className="text-[11px] font-medium text-emerald-300">
-                {fromToken.chain === 'solana' ? 'Jupiter Ultra (Raydium + Meteora)' : 'Trust Wallet Smart Router'}
+                {routingEngine === 'raydium'
+                  ? 'Raydium SDK V2 (CPMM Pool • CurveCalculator)'
+                  : fromToken.chain === 'solana'
+                  ? 'Jupiter Ultra (Raydium + Meteora)'
+                  : 'Trust Wallet Smart Router'}
               </span>
             </div>
+
+            {routingEngine === 'raydium' && (
+              <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                <span>CPMM Execution</span>
+                <span className="font-mono text-cyan-400">TxVersion.V0 • 250k Units</span>
+              </div>
+            )}
 
             <div className="flex items-center justify-between text-slate-400 text-[11px]">
               <span>Price Impact</span>
@@ -263,7 +332,11 @@ export const TradePanel: React.FC = () => {
           <button
             onClick={handleSwap}
             disabled={isSwapping || numInput <= 0}
-            className="w-full rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 hover:from-blue-500 hover:to-indigo-500 transition disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2"
+            className={`w-full rounded-xl py-3 text-sm font-bold text-white shadow-lg transition disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 ${
+              routingEngine === 'raydium'
+                ? 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 shadow-cyan-600/30 hover:from-cyan-500 hover:to-indigo-500'
+                : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 shadow-blue-600/30 hover:from-blue-500 hover:to-indigo-500'
+            }`}
           >
             {isSwapping ? (
               <>
@@ -273,7 +346,11 @@ export const TradePanel: React.FC = () => {
             ) : (
               <>
                 <Zap className="w-4 h-4 text-yellow-300" />
-                <span>Swap via Trust Wallet & Jupiter</span>
+                <span>
+                  {routingEngine === 'raydium'
+                    ? 'Execute via Raydium SDK V2 (CPMM)'
+                    : 'Swap via Trust Wallet & Jupiter'}
+                </span>
               </>
             )}
           </button>

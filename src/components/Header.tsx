@@ -11,7 +11,8 @@ import {
   Layers,
   Sparkles,
   Award,
-  BarChart3
+  BarChart3,
+  Zap
 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { useAgent } from '../context/AgentContext';
@@ -135,6 +136,21 @@ export const Header: React.FC<HeaderProps> = ({ onOpenWalletModal, onOpenPortalM
           >
             <Terminal className="w-3.5 h-3.5" />
             <span>CLI Console</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('raydium')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              activeView === 'raydium'
+                ? 'bg-cyan-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800/50'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Raydium SDK</span>
+            <span className="hidden xl:inline text-[9px] bg-cyan-500/20 text-cyan-300 px-1 py-0.2 rounded font-mono font-bold">
+              CPMM
+            </span>
           </button>
         </div>
 

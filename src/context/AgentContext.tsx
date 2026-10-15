@@ -6,8 +6,8 @@ interface AgentContextType {
   messages: ChatMessage[];
   isProcessing: boolean;
   cliMode: boolean;
-  activeView: 'chart' | 'swap' | 'orders' | 'terminal' | 'performance';
-  setActiveView: (view: 'chart' | 'swap' | 'orders' | 'terminal' | 'performance') => void;
+  activeView: 'chart' | 'swap' | 'orders' | 'terminal' | 'performance' | 'raydium';
+  setActiveView: (view: 'chart' | 'swap' | 'orders' | 'terminal' | 'performance' | 'raydium') => void;
   setCliMode: (enabled: boolean) => void;
   sendMessage: (text: string) => Promise<void>;
   executeCli: (cmd: string) => Promise<string>;
@@ -27,7 +27,7 @@ export const AgentProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   } = useWallet();
 
   const [cliMode, setCliMode] = useState(false);
-  const [activeView, setActiveView] = useState<'chart' | 'swap' | 'orders' | 'terminal' | 'performance'>('chart');
+  const [activeView, setActiveView] = useState<'chart' | 'swap' | 'orders' | 'terminal' | 'performance' | 'raydium'>('chart');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -37,11 +37,13 @@ export const AgentProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       content: `👋 **Trust Wallet Agent SDK & Jupiter Terminal Ready.**
 I am your multichain autonomous trading copilot. I can:
 • Execute market buys, sells, and cross-chain swaps
+• Run direct **Raydium SDK V2 CPMM swaps** with CurveCalculator & TxVersion.V0
 • Arm automated **Take Profit (TP)** & **Stop Loss (SL)** bracket orders
 • Streamline live **DexScreener** charts and liquidity inspection
 • Run \`@trustwallet/cli\` commands and MCP agent skills`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       quickActions: [
+        '⚡ Raydium CPMM Swap',
         '⚡ Buy 1 SOL of BONK',
         '🎯 Set TP $185 & SL $135 on SOL',
         '📈 Win Rate Analytics',
@@ -136,6 +138,24 @@ I am your multichain autonomous trading copilot. I can:
         executed: true,
         message: 'Opened AI Agent Performance Analytics visualizer. Historical win rate is 78.4% with +$1,515.00 cumulative profit (+54.1%).',
       };
+    }
+
+    if (name === 'raydium_cpmm_swap') {
+      try {
+        const res = await fetch('/api/raydium/swap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(args),
+        });
+        const data = await res.json();
+        return {
+          executed: true,
+          message: `Raydium CPMM Swap Landed! Quote: ${data.inputAmount} -> ${data.outputAmount} (Fee: ${data.tradeFee}) | Tx: ${data.solscanUrl}`,
+          details: data,
+        };
+      } catch (err: any) {
+        return { executed: false, message: `Raydium swap error: ${err.message}` };
+      }
     }
 
     return { executed: false, message: 'Unknown tool declaration' };

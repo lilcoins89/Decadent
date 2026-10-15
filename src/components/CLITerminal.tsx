@@ -57,6 +57,8 @@ Total Portfolio Value: $4,297.85 USD`,
 
   const sampleCommands = [
     'npx @trustwallet/cli balance',
+    'npx @trustwallet/cli raydium swap',
+    'node raydium-quickstart/swap.mjs',
     'npx @trustwallet/cli swap SOL BONK 1.5',
     'npx @trustwallet/cli keys list',
     'npx @trustwallet/cli portal status',

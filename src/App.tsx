@@ -6,6 +6,7 @@ import { AgentChatBox } from './components/AgentChatBox';
 import { CLITerminal } from './components/CLITerminal';
 import { ActiveOrdersView } from './components/ActiveOrdersView';
 import { AgentPerformanceView } from './components/AgentPerformanceView';
+import { RaydiumQuickstartView } from './components/RaydiumQuickstartView';
 import { WalletModal } from './components/WalletModal';
 import { PortalModal } from './components/PortalModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -77,6 +78,12 @@ const TerminalLayout: React.FC = () => {
             {activeView === 'terminal' && (
               <div className="flex-1 h-full">
                 <CLITerminal />
+              </div>
+            )}
+
+            {activeView === 'raydium' && (
+              <div className="flex-1 h-full">
+                <RaydiumQuickstartView />
               </div>
             )}
           </div>
@@ -190,6 +197,19 @@ const TerminalLayout: React.FC = () => {
         >
           <Terminal className="w-4 h-4" />
           <span>CLI</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveView('raydium');
+            setMobileChatOpen(false);
+          }}
+          className={`flex flex-col items-center gap-1 py-1 px-2 rounded-lg transition ${
+            activeView === 'raydium' && !mobileChatOpen ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          }`}
+        >
+          <Zap className="w-4 h-4 text-cyan-400" />
+          <span>Raydium</span>
         </button>
       </nav>
 
