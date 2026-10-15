@@ -1,0 +1,6 @@
+{
+  "name": "Trust Wallet Agent Terminal",
+  "description": "Full-stack Web PWA trading agent with multichain Trust Wallet & Jupiter SDK integration, live DexScreener charts, conversational AI trade execution, swaps, Take Profit, and Stop Loss automation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

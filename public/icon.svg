@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0500FF"/>
+      <stop offset="50%" stop-color="#0052FF"/>
+      <stop offset="100%" stop-color="#00D2FF"/>
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#c7d2fe"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="128" fill="#080b11"/>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)" opacity="0.15"/>
+  <rect x="16" y="16" width="480" height="480" rx="112" stroke="url(#bg)" stroke-width="4" fill="none" opacity="0.4"/>
+  
+  <!-- Trust Wallet Shield Silhouette -->
+  <g transform="translate(256, 256) scale(1.15) translate(-128, -138)">
+    <path d="M128 20 C180 60 220 80 236 90 C236 170 196 230 128 260 C60 230 20 170 20 90 C36 80 76 60 128 20 Z" 
+          fill="url(#bg)" filter="url(#glow)"/>
+    <path d="M128 36 C172 70 204 86 218 96 C218 160 184 212 128 238 C72 212 38 160 38 96 C52 86 84 70 128 36 Z" 
+          fill="#0a0e1a"/>
+    <!-- Agent Node / Lightning / Circuit -->
+    <path d="M136 68 L88 140 L124 140 L116 208 L172 132 L132 132 Z" 
+          fill="url(#shieldGrad)"/>
+    <circle cx="128" cy="138" r="80" stroke="#00D2FF" stroke-width="3" stroke-dasharray="8 6" fill="none" opacity="0.6"/>
+    <!-- Orbiting nodes -->
+    <circle cx="128" cy="58" r="6" fill="#00F5A0"/>
+    <circle cx="198" cy="138" r="6" fill="#0052FF"/>
+    <circle cx="128" cy="218" r="6" fill="#38bdf8"/>
+    <circle cx="58" cy="138" r="6" fill="#6366f1"/>
+  </g>
+</svg>
