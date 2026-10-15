@@ -1,1 +1,139 @@
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    --ink: #102a2b;
+    --ink-soft: #476b6a;
+    --teal: #0f766e;
+    --teal-bright: #14b8a6;
+    --teal-pale: #dff4ee;
+    --paper: #f4f1e8;
+    --paper-deep: #e9e4d7;
+    --line: rgba(16, 42, 43, 0.16);
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0;
+    min-width: 320px;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(20, 184, 166, .12), transparent 28rem),
+      linear-gradient(135deg, #f8f6ef 0%, var(--paper) 58%, #e9f0e9 100%);
+    color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+  button, input, textarea { font: inherit; }
+}
+
+/* A quiet, tactile editorial frame around the existing terminal modules. */
+header.sticky {
+  background: rgba(244, 241, 232, .88) !important;
+  border-color: var(--line) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.8), 0 12px 32px rgba(16,42,43,.07);
+  backdrop-filter: blur(18px);
+}
+header.sticky span, header.sticky p { color: var(--ink-soft); }
+header.sticky .text-white { color: var(--ink) !important; }
+header.sticky .bg-blue-500\/20 { background: var(--teal-pale) !important; color: var(--teal) !important; border-color: rgba(15,118,110,.25) !important; }
+header.sticky .bg-slate-900\/90,
+header.sticky .bg-slate-900\/80,
+header.sticky .bg-slate-800\/60 { background: rgba(255,255,255,.58) !important; border-color: var(--line) !important; }
+header.sticky .text-slate-400 { color: var(--ink-soft) !important; }
+header.sticky .border-slate-800, header.sticky .border-slate-700 { border-color: var(--line) !important; }
+header.sticky button:hover { background: rgba(15,118,110,.09) !important; }
+header.sticky button[class*="bg-blue-600"] { background: var(--teal) !important; box-shadow: 0 5px 14px rgba(15,118,110,.2); }
+header.sticky button[class*="bg-cyan-600"] { background: #155e63 !important; }
+
+/* Panels from the product modules inherit this paper/ink language. */
+main { position: relative; }
+main::before {
+  content: "DECADENT / AUTONOMOUS MARKET INTELLIGENCE";
+  position: absolute;
+  top: -12px;
+  right: 22px;
+  color: rgba(15,118,110,.46);
+  font: 700 9px/1 ui-monospace, SFMono-Regular, monospace;
+  letter-spacing: .2em;
+  pointer-events: none;
+}
+main > div > div {
+  scrollbar-color: rgba(15,118,110,.35) transparent;
+}
+main [class*="rounded-xl"], main [class*="rounded-2xl"] {
+  border-color: var(--line) !important;
+  box-shadow: 0 14px 32px rgba(16,42,43,.07), inset 0 1px rgba(255,255,255,.8);
+}
+main [class*="bg-[#07090e]"], main [class*="bg-[#080b11]"], main [class*="bg-[#0f1422]"], main [class*="bg-slate-900"] {
+  background: rgba(255,255,255,.62) !important;
+}
+main [class*="text-white"] { color: var(--ink) !important; }
+main [class*="text-slate-100"], main [class*="text-slate-200"], main [class*="text-slate-300"] { color: #2f5554 !important; }
+main [class*="text-slate-400"], main [class*="text-slate-500"] { color: #6b8580 !important; }
+main [class*="border-slate-800"], main [class*="border-slate-700"] { border-color: var(--line) !important; }
+main [class*="bg-blue-600"] { background: var(--teal) !important; }
+main [class*="text-blue-400"], main [class*="text-cyan-400"] { color: var(--teal) !important; }
+main [class*="bg-blue-500\/10"], main [class*="bg-cyan-500\/10"] { background: var(--teal-pale) !important; }
+
+/* Give the workspace a subtle paper grain without external assets. */
+main::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .16;
+  background-image: radial-gradient(rgba(16,42,43,.22) .55px, transparent .55px);
+  background-size: 7px 7px;
+  mix-blend-mode: multiply;
+}
+
+@media (max-width: 768px) {
+  main::before { display: none; }
+  main { padding-top: 1.25rem; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  main > div > div { animation: rise-in .55s ease both; }
+  @keyframes rise-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+}
+
+::selection { background: var(--teal); color: #fff; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(15,118,110,.32); border: 3px solid transparent; background-clip: padding-box; border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@media (prefers-color-scheme: dark) {
+  body { background: #102a2b; }
+}
+
+@media (max-width: 640px) {
+  header.sticky { padding-inline: .75rem !important; }
+}
+
+/* Keep the bottom navigation aligned with the teal system on small screens. */
+nav.fixed { background: rgba(244,241,232,.94) !important; border-color: var(--line) !important; }
+nav.fixed button { color: var(--ink-soft) !important; }
+nav.fixed button[class*="text-blue-400"], nav.fixed button[class*="text-cyan-400"] { color: var(--teal) !important; }
+button[class*="from-blue-600"] { background: var(--teal) !important; box-shadow: 0 12px 25px rgba(15,118,110,.28) !important; }
+
+/* Serif display accents make the interface feel considered rather than generic. */
+header.sticky > div > div:first-child span:first-child,
+main h1, main h2, main h3 { font-family: Georgia, 'Times New Roman', serif; letter-spacing: -.02em; }
+
+@media (prefers-color-scheme: dark) {
+  header.sticky { background: rgba(16,42,43,.92) !important; }
+  header.sticky .text-white, main [class*="text-white"] { color: #eef8f1 !important; }
+  main [class*="bg-[#07090e]"], main [class*="bg-[#080b11]"], main [class*="bg-[#0f1422]"], main [class*="bg-slate-900"] { background: rgba(16,42,43,.82) !important; }
+  main [class*="text-slate-100"], main [class*="text-slate-200"], main [class*="text-slate-300"] { color: #d4e6df !important; }
+}
+
+/* Brand mark */
+header.sticky > div > div:first-child > div:first-child { background: linear-gradient(135deg, #0f766e, #8bd8c2) !important; box-shadow: 0 8px 18px rgba(15,118,110,.22) !important; }
+header.sticky > div > div:first-child > div:first-child > div { background: var(--paper) !important; }
+header.sticky > div > div:first-child svg { color: var(--teal) !important; }
+main .text-emerald-400, main .text-emerald-300 { color: #16846e !important; }
+main .bg-emerald-500 { background: #16846e !important; }
+
+@media (max-width: 1023px) {
+  .lg\:hidden.fixed { background: rgba(16,42,43,.97) !important; }
+}
