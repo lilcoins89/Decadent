@@ -18,10 +18,12 @@
     margin: 0;
     min-width: 320px;
     background:
-      radial-gradient(circle at 10% 0%, rgba(20, 184, 166, .12), transparent 28rem),
-      linear-gradient(135deg, #f8f6ef 0%, var(--paper) 58%, #e9f0e9 100%);
+      radial-gradient(circle at 8% -8%, rgba(20, 184, 166, .18), transparent 28rem),
+      radial-gradient(circle at 100% 18%, rgba(15, 118, 110, .08), transparent 24rem),
+      linear-gradient(135deg, #fbfaf5 0%, var(--paper) 56%, #e4f0e9 100%);
     color: var(--ink);
     font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "cv11", "ss01";
   }
   button, input, textarea { font: inherit; }
 }
@@ -46,7 +48,15 @@ header.sticky button[class*="bg-blue-600"] { background: var(--teal) !important;
 header.sticky button[class*="bg-cyan-600"] { background: #155e63 !important; }
 
 /* Panels from the product modules inherit this paper/ink language. */
-main { position: relative; }
+main {
+  position: relative;
+  isolation: isolate;
+}
+
+main > div {
+  position: relative;
+  z-index: 1;
+}
 main::before {
   content: "DECADENT / AUTONOMOUS MARKET INTELLIGENCE";
   position: absolute;
@@ -103,7 +113,12 @@ main::after {
 ::-webkit-scrollbar-track { background: transparent; }
 
 @media (prefers-color-scheme: dark) {
-  body { background: #102a2b; }
+  html { background: #102a2b; }
+  body {
+    background:
+      radial-gradient(circle at 8% -8%, rgba(20, 184, 166, .16), transparent 28rem),
+      linear-gradient(135deg, #102a2b 0%, #153938 58%, #0c2527 100%);
+  }
 }
 
 @media (max-width: 640px) {

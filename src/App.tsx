@@ -34,7 +34,7 @@ const TerminalLayout: React.FC = () => {
   const activeOrdersCount = orders.filter(o => o.status === 'active').length;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#07090e] text-slate-100 selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-transparent text-slate-100 selection:bg-teal-700 selection:text-white">
       {/* Top Header */}
       <Header
         onOpenWalletModal={() => setWalletModalOpen(true)}
@@ -101,7 +101,7 @@ const TerminalLayout: React.FC = () => {
       <div className="lg:hidden fixed bottom-16 right-4 z-40">
         <button
           onClick={() => setMobileChatOpen(!mobileChatOpen)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-xl shadow-blue-600/40 border border-blue-400/30 active:scale-95"
+          className="flex items-center gap-2 rounded-full border border-teal-700/25 bg-teal-700 px-4 py-2.5 font-bold text-white shadow-xl shadow-teal-900/20 transition-transform active:scale-95"
         >
           <Bot className="w-5 h-5" />
           <span className="text-xs">AI Agent</span>
