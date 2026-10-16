@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useConnector } from '@solana/connector/react';
 import { Token, Order, ChainId, DexPair } from '../types';
 import { INITIAL_TOKENS } from '../data/tokens';
 
@@ -31,7 +32,7 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 const WALLET_ADDRESSES: { [key in ChainId]: string } = {
-  solana: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM',
+  solana: '',
   ethereum: '0x71C8364437bE573542065369654988c42b083974',
   bsc: '0x71C8364437bE573542065369654988c42b083974',
   arbitrum: '0x71C8364437bE573542065369654988c42b083974',
@@ -40,6 +41,8 @@ const WALLET_ADDRESSES: { [key in ChainId]: string } = {
 };
 
 export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { account, isConnected } = useConnector();
+  const [walletAddresses, setWalletAddresses] = useState<{ [key in ChainId]: string }>(WALLET_ADDRESSES);
   const [tokens, setTokens] = useState<Token[]>(() => {
     const saved = localStorage.getItem('tw_tokens');
     return saved ? JSON.parse(saved) : INITIAL_TOKENS;
@@ -108,6 +111,13 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       status: 'success',
     },
   ]);
+
+  useEffect(() => {
+    setWalletAddresses((previous) => ({
+      ...previous,
+      solana: isConnected && account ? String(account) : '',
+    }));
+  }, [account, isConnected]);
 
   // Persist tokens
   useEffect(() => {
@@ -311,7 +321,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         activeChain,
         orders,
         totalBalanceUsd,
-        walletAddress: WALLET_ADDRESSES,
+        walletAddress: walletAddresses,
         trustPortalApiKey,
         trustPortalSecret,
         recentActivity,
