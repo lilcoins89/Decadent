@@ -43,51 +43,16 @@ const WALLET_ADDRESSES: { [key in ChainId]: string } = {
 export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { account, isConnected } = useConnector();
   const [walletAddresses, setWalletAddresses] = useState<{ [key in ChainId]: string }>(WALLET_ADDRESSES);
-  const [tokens, setTokens] = useState<Token[]>(() => {
-    const saved = localStorage.getItem('tw_tokens');
-    return saved ? JSON.parse(saved) : INITIAL_TOKENS;
-  });
+  const [tokens, setTokens] = useState<Token[]>([]);
 
-  const [selectedToken, setSelectedToken] = useState<Token>(tokens[0]);
+  const [selectedToken, setSelectedToken] = useState<Token>(INITIAL_TOKENS[0]);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [activeChain, setActiveChain] = useState<ChainId | 'all'>('solana');
 
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('tw_orders');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'ord-init-1',
-        type: 'bracket',
-        tokenSymbol: 'SOL',
-        chain: 'solana',
-        amount: 1.5,
-        entryPrice: 154.25,
-        takeProfitPrice: 185.00,
-        stopLossPrice: 135.00,
-        currentPrice: 154.25,
-        status: 'active',
-        createdAt: new Date(Date.now() - 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-      {
-        id: 'ord-init-2',
-        type: 'take-profit',
-        tokenSymbol: 'BONK',
-        chain: 'solana',
-        amount: 1000000,
-        entryPrice: 0.0000218,
-        takeProfitPrice: 0.0000300,
-        currentPrice: 0.0000218,
-        status: 'active',
-        createdAt: new Date(Date.now() - 1800000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ];
-  });
+  const [orders, setOrders] = useState<Order[]>([]);
 
-  const [trustPortalApiKey, setTrustPortalApiKey] = useState<string>(() => {
-    return localStorage.getItem('tw_portal_key') || 'tw_live_948f2038bca77102d';
-  });
-  const [trustPortalSecret, setTrustPortalSecret] = useState<string>(() => {
-    return localStorage.getItem('tw_portal_secret') || 'hmac_sec_e838102a9d82';
-  });
+  const [trustPortalApiKey, setTrustPortalApiKey] = useState<string>(() => localStorage.getItem('tw_portal_key') || '');
+  const [trustPortalSecret, setTrustPortalSecret] = useState<string>(() => localStorage.getItem('tw_portal_secret') || '');
 
   const [recentActivity, setRecentActivity] = useState<Array<{
     id: string;
@@ -95,22 +60,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     desc: string;
     timestamp: string;
     status: 'success' | 'pending';
-  }>>([
-    {
-      id: 'act-1',
-      type: 'SWAP',
-      desc: 'Swapped 0.5 SOL for 3,500,000 BONK via Jupiter Ultra',
-      timestamp: '12m ago',
-      status: 'success',
-    },
-    {
-      id: 'act-2',
-      type: 'SWAP',
-      desc: 'Trust Wallet Cross-Chain Swap: 150 USDC to 134 TWT',
-      timestamp: '1h ago',
-      status: 'success',
-    },
-  ]);
+  }>>([]);
 
   useEffect(() => {
     setWalletAddresses((previous) => ({
@@ -119,37 +69,58 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }));
   }, [account, isConnected]);
 
-  // Persist tokens
   useEffect(() => {
-    localStorage.setItem('tw_tokens', JSON.stringify(tokens));
-  }, [tokens]);
+    if (!isConnected || !account) {
+      setTokens([]);
+      return;
+    }
 
-  // Persist orders
-  useEffect(() => {
-    localStorage.setItem('tw_orders', JSON.stringify(orders));
-  }, [orders]);
+    let cancelled = false;
+    setPortfolioLoading(true);
+    fetch(`/api/helius/portfolio?address=${encodeURIComponent(String(account))}`)
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'Unable to load wallet portfolio');
+        return payload;
+      })
+      .then((portfolio) => {
+        if (cancelled) return;
+        const native = INITIAL_TOKENS.find((token) => token.symbol === 'SOL');
+        const liveTokens: Token[] = [
+          ...(native && portfolio.nativeBalanceSol > 0 ? [{
+            ...native,
+            balance: portfolio.nativeBalanceSol,
+            priceUsd: native.priceUsd,
+          }] : []),
+          ...(portfolio.assets ?? []).map((asset: any): Token => {
+            const known = INITIAL_TOKENS.find((token) => token.address === asset.id || token.symbol === asset.symbol);
+            return {
+              ...(known ?? { change24h: 0, chain: 'solana' as const }),
+              symbol: asset.symbol,
+              name: asset.name,
+              address: asset.id,
+              decimals: asset.decimals,
+              balance: asset.amount,
+              priceUsd: asset.priceUsd ?? known?.priceUsd ?? 0,
+              iconUrl: asset.logoUri ?? known?.iconUrl,
+            };
+          }),
+        ].filter((token, index, all) => all.findIndex((candidate) => candidate.symbol === token.symbol) === index);
+        setTokens(liveTokens);
+        setSelectedToken((current) => liveTokens.find((token) => token.symbol === current.symbol) ?? liveTokens[0] ?? current);
+      })
+      .catch(() => {
+        if (!cancelled) setTokens([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPortfolioLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [account, isConnected]);
 
   // Calculate total USD balance
   const totalBalanceUsd = tokens.reduce((sum, t) => sum + t.balance * t.priceUsd, 0);
-
-  // Autonomous Order Monitor & Price Tick Simulation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTokens(prevTokens => {
-        return prevTokens.map(tok => {
-          // Subtle realistic micro-volatility (-0.4% to +0.45%)
-          const pctChange = (Math.random() - 0.48) * 0.008;
-          const newPrice = Math.max(0.0000001, tok.priceUsd * (1 + pctChange));
-          return {
-            ...tok,
-            priceUsd: Number(newPrice.toPrecision(6)),
-          };
-        });
-      });
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Check active orders whenever prices change
   useEffect(() => {
